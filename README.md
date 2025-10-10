@@ -1,23 +1,73 @@
-# ✨ Welcome to Your Spark Template!
-You've just launched your brand-new Spark Template Codespace — everything’s fired up and ready for you to explore, build, and create with Spark!
+# Falcon & Bulldog Score Monitor
 
-This template is your blank canvas. It comes with a minimal setup to help you get started quickly with Spark development.
+A real-time sports score monitoring application for tracking Falcons and Bulldogs games, built with React, Vite, and GitHub Spark.
 
-🚀 What's Inside?
-- A clean, minimal Spark environment
-- Pre-configured for local development
-- Ready to scale with your ideas
-  
-🧠 What Can You Do?
+## Features
 
-Right now, this is just a starting point — the perfect place to begin building and testing your Spark applications.
+- 🏈 Real-time game score tracking for Atlanta Falcons and Georgia Bulldogs
+- 📊 Live game updates from ESPN APIs
+- 🔔 Customizable alerts for touchdowns, field goals, first downs, and more
+- 🎵 Audio notifications with custom sound support
+- 📱 Responsive design with dark mode support
 
-🧹 Just Exploring?
-No problem! If you were just checking things out and don’t need to keep this code:
+## Development
 
-- Simply delete your Spark.
-- Everything will be cleaned up — no traces left behind.
+### Prerequisites
 
-📄 License For Spark Template Resources 
+- Node.js 20 or higher
+- npm
+
+### Getting Started
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+3. Build for production:
+   ```bash
+   npm run build
+   ```
+
+### Project Structure
+
+- `src/` - Application source code
+  - `components/` - React components
+  - `hooks/` - Custom React hooks
+  - `lib/` - Utility functions and API clients
+  - `styles/` - CSS and theme files
+- `public/` - Static assets
+- `.github/workflows/` - CI/CD workflows
+
+## Deployment
+
+This application is automatically deployed to GitHub Pages using GitHub Actions.
+
+### Automatic Deployment
+
+The workflow is triggered on:
+- Push to the `main` branch
+- Manual workflow dispatch
+
+### Setup GitHub Pages
+
+To enable deployment:
+1. Go to repository **Settings** → **Pages**
+2. Under **Source**, select **GitHub Actions**
+3. The site will be available at: `https://bensbar.github.io/falcon-bulldog-score/`
+
+### Manual Deployment
+
+You can also trigger a deployment manually:
+1. Go to **Actions** tab
+2. Select **Deploy to GitHub Pages** workflow
+3. Click **Run workflow**
+
+## License
 
 The Spark Template files and resources from GitHub are licensed under the terms of the MIT license, Copyright GitHub, Inc.
