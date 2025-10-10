@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { SpeakerHigh, PlayCircle } from '@phosphor-icons/react'
-import { playEventSound, hasCustomAudio, preloadAudio, type EventType, type TeamType } from '@/lib/audioPlayer'
+import { SpeakerHigh, PlayCircle, StopCircle } from '@phosphor-icons/react'
+import { playEventSound, stopAllAudio, hasCustomAudio, preloadAudio, type EventType, type TeamType } from '@/lib/audioPlayer'
 
 export function AudioTestPanel() {
   const [loading, setLoading] = useState(true)
@@ -58,9 +58,20 @@ export function AudioTestPanel() {
 
   return (
     <Card className="p-6">
-      <div className="flex items-center gap-2 mb-4">
-        <SpeakerHigh size={24} weight="fill" className="text-primary" />
-        <h2 className="text-xl font-semibold">Audio Test</h2>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <SpeakerHigh size={24} weight="fill" className="text-primary" />
+          <h2 className="text-xl font-semibold">Audio Test</h2>
+        </div>
+        <Button
+          size="sm"
+          variant="destructive"
+          onClick={stopAllAudio}
+          className="h-8 gap-2"
+        >
+          <StopCircle size={16} weight="fill" />
+          Stop
+        </Button>
       </div>
       
       <p className="text-sm text-muted-foreground mb-6">
