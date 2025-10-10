@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { fetchAllGames, type GameData } from '@/lib/espnApi'
-import { playEventSound, type EventType } from '@/lib/audioPlayer'
+import { playEventSound, type EventType, type TeamType } from '@/lib/audioPlayer'
 import { toast } from 'sonner'
 
 export interface AlertSettings {
@@ -14,7 +14,7 @@ export interface AlertSettings {
 interface GameEvent {
   type: EventType
   description: string
-  team: string
+  team: TeamType
 }
 
 export function useGameMonitor(alertSettings: AlertSettings) {
@@ -99,7 +99,7 @@ export function useGameMonitor(alertSettings: AlertSettings) {
   const handleEvents = (events: GameEvent[]) => {
     events.forEach(event => {
       if (alertSettings[event.type]) {
-        playEventSound(event.type)
+        playEventSound(event.type, event.team)
         toast(event.description, {
           duration: 3000,
           className: event.type === 'touchdown' || event.type === 'safety' ? 

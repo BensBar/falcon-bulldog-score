@@ -3,17 +3,11 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { SpeakerHigh, PlayCircle } from '@phosphor-icons/react'
-import { playEventSound, hasCustomAudio, preloadAudio, type EventType } from '@/lib/audioPlayer'
+import { playEventSound, hasCustomAudio, preloadAudio, type EventType, type TeamType } from '@/lib/audioPlayer'
 
 export function AudioTestPanel() {
   const [loading, setLoading] = useState(true)
-  const [customAudioStatus, setCustomAudioStatus] = useState<Record<EventType, boolean>>({
-    touchdown: false,
-    fieldGoal: false,
-    firstDown: false,
-    safety: false,
-    opponentThirdLong: false
-  })
+  const [customAudioStatus, setCustomAudioStatus] = useState<Record<string, boolean>>({})
 
   const eventInfo: Record<EventType, { label: string; description: string }> = {
     touchdown: { label: 'Touchdown', description: '6 points scored' },
@@ -23,17 +17,26 @@ export function AudioTestPanel() {
     opponentThirdLong: { label: 'Opponent 3rd & Long', description: '7+ yards to go' }
   }
 
+  const teams: { key: TeamType; label: string }[] = [
+    { key: 'falcons', label: 'Falcons' },
+    { key: 'bulldogs', label: 'Bulldogs' }
+  ]
+
   useEffect(() => {
     const checkAudioFiles = async () => {
       await preloadAudio()
       
-      const status: Record<EventType, boolean> = {
-        touchdown: hasCustomAudio('touchdown'),
-        fieldGoal: hasCustomAudio('fieldGoal'),
-        firstDown: hasCustomAudio('firstDown'),
-        safety: hasCustomAudio('safety'),
-        opponentThirdLong: hasCustomAudio('opponentThirdLong')
-      }
+      const status: Record<string, boolean> = {}
+      
+      const eventTypes: EventType[] = ['touchdown', 'fieldGoal', 'firstDown', 'safety', 'opponentThirdLong']
+      
+      eventTypes.forEach(eventType => {
+        teams.forEach(team => {
+          const key = `${team.key}-${eventType}`
+          status[key] = hasCustomAudio(eventType, team.key)
+        })
+        status[eventType] = hasCustomAudio(eventType)
+      })
       
       setCustomAudioStatus(status)
       setLoading(false)
@@ -42,8 +45,15 @@ export function AudioTestPanel() {
     checkAudioFiles()
   }, [])
 
-  const handleTestSound = async (eventType: EventType) => {
-    await playEventSound(eventType)
+  const handleTestSound = async (eventType: EventType, team: TeamType) => {
+    await playEventSound(eventType, team)
+  }
+
+  const getAudioStatus = (eventType: EventType, team: TeamType): 'custom' | 'generic' | 'synthesized' => {
+    const teamSpecificKey = `${team}-${eventType}`
+    if (customAudioStatus[teamSpecificKey]) return 'custom'
+    if (customAudioStatus[eventType]) return 'generic'
+    return 'synthesized'
   }
 
   return (
@@ -54,44 +64,60 @@ export function AudioTestPanel() {
       </div>
       
       <p className="text-sm text-muted-foreground mb-6">
-        Test your alert sounds. Custom audio files override synthesized tones.
+        Test your alert sounds. Team-specific audio files override generic files.
       </p>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {(Object.entries(eventInfo) as [EventType, typeof eventInfo[EventType]][]).map(([eventType, info]) => (
-          <div
-            key={eventType}
-            className="flex items-center justify-between p-3 rounded-lg border border-border bg-card/50 hover:bg-card transition-colors"
-          >
-            <div className="flex-1 min-w-0 mr-3">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-medium text-sm">{info.label}</span>
-                {loading ? (
-                  <Badge variant="outline" className="text-xs">
-                    Loading...
-                  </Badge>
-                ) : customAudioStatus[eventType] ? (
-                  <Badge variant="default" className="text-xs bg-accent text-accent-foreground">
-                    Custom
-                  </Badge>
-                ) : (
-                  <Badge variant="secondary" className="text-xs">
-                    Synthesized
-                  </Badge>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">{info.description}</p>
+          <div key={eventType} className="space-y-2">
+            <div className="text-sm font-semibold text-foreground">
+              {info.label}
+              <span className="text-muted-foreground font-normal ml-2 text-xs">
+                {info.description}
+              </span>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleTestSound(eventType)}
-              disabled={loading}
-              className="shrink-0"
-            >
-              <PlayCircle size={18} weight="fill" className="mr-1" />
-              Test
-            </Button>
+            
+            <div className="grid grid-cols-2 gap-2">
+              {teams.map(team => {
+                const status = loading ? 'loading' : getAudioStatus(eventType, team.key)
+                return (
+                  <div
+                    key={team.key}
+                    className="flex items-center justify-between p-3 rounded-lg border border-border bg-card/50 hover:bg-card transition-colors"
+                  >
+                    <div className="flex items-center gap-2 min-w-0 mr-2">
+                      <span className="font-medium text-sm">{team.label}</span>
+                      {loading ? (
+                        <Badge variant="outline" className="text-xs">
+                          ...
+                        </Badge>
+                      ) : status === 'custom' ? (
+                        <Badge variant="default" className="text-xs bg-accent text-accent-foreground">
+                          Team
+                        </Badge>
+                      ) : status === 'generic' ? (
+                        <Badge variant="secondary" className="text-xs">
+                          Generic
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">
+                          Synth
+                        </Badge>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleTestSound(eventType, team.key)}
+                      disabled={loading}
+                      className="shrink-0 h-8 w-8 p-0"
+                    >
+                      <PlayCircle size={20} weight="fill" />
+                    </Button>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         ))}
       </div>
@@ -102,7 +128,9 @@ export function AudioTestPanel() {
           <br />
           Place audio files (MP3, WAV, OGG) in <code className="bg-background px-1 py-0.5 rounded text-accent">src/assets/audio/</code>
           <br />
-          Use these exact names: <code className="bg-background px-1 py-0.5 rounded text-accent">touchdown.mp3</code>, <code className="bg-background px-1 py-0.5 rounded text-accent">field-goal.mp3</code>, <code className="bg-background px-1 py-0.5 rounded text-accent">first-down.mp3</code>, <code className="bg-background px-1 py-0.5 rounded text-accent">safety.mp3</code>, <code className="bg-background px-1 py-0.5 rounded text-accent">opponent-third-long.mp3</code>
+          <strong className="text-foreground mt-2 inline-block">Team-specific files:</strong> <code className="bg-background px-1 py-0.5 rounded text-accent">falcons-touchdown.mp3</code>, <code className="bg-background px-1 py-0.5 rounded text-accent">bulldogs-touchdown.mp3</code> or <code className="bg-background px-1 py-0.5 rounded text-accent">uga-touchdown.mp3</code>
+          <br />
+          <strong className="text-foreground mt-2 inline-block">Generic files:</strong> <code className="bg-background px-1 py-0.5 rounded text-accent">touchdown.mp3</code>, <code className="bg-background px-1 py-0.5 rounded text-accent">field-goal.mp3</code>, <code className="bg-background px-1 py-0.5 rounded text-accent">first-down.mp3</code>, <code className="bg-background px-1 py-0.5 rounded text-accent">safety.mp3</code>, <code className="bg-background px-1 py-0.5 rounded text-accent">opponent-third-long.mp3</code>
         </p>
       </div>
     </Card>

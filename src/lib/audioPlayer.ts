@@ -1,7 +1,8 @@
 export type EventType = 'touchdown' | 'fieldGoal' | 'firstDown' | 'safety' | 'opponentThirdLong'
+export type TeamType = 'falcons' | 'bulldogs'
 
 const audioContext = typeof window !== 'undefined' ? new AudioContext() : null
-const audioCache = new Map<EventType, HTMLAudioElement>()
+const audioCache = new Map<string, HTMLAudioElement>()
 const audioFileMap: Record<EventType, string[]> = {
   touchdown: ['touchdown.mp3', 'touchdown.wav', 'touchdown.ogg', 'touchdown.m4a'],
   fieldGoal: ['field-goal.mp3', 'field-goal.wav', 'field-goal.ogg', 'field-goal.m4a'],
@@ -10,22 +11,43 @@ const audioFileMap: Record<EventType, string[]> = {
   opponentThirdLong: ['opponent-third-long.mp3', 'opponent-third-long.wav', 'opponent-third-long.ogg', 'opponent-third-long.m4a']
 }
 
-async function loadAudioFile(eventType: EventType): Promise<HTMLAudioElement | null> {
-  if (audioCache.has(eventType)) {
-    return audioCache.get(eventType)!
+function getCacheKey(eventType: EventType, team?: TeamType): string {
+  return team ? `${team}-${eventType}` : eventType
+}
+
+async function loadAudioFile(eventType: EventType, team?: TeamType): Promise<HTMLAudioElement | null> {
+  const cacheKey = getCacheKey(eventType, team)
+  
+  if (audioCache.has(cacheKey)) {
+    return audioCache.get(cacheKey)!
   }
 
-  const possibleFiles = audioFileMap[eventType]
+  const extensions = ['.mp3', '.wav', '.ogg', '.m4a']
+  const filenameBases: string[] = []
   
-  for (const filename of possibleFiles) {
-    try {
-      const module = await import(`@/assets/audio/${filename}`)
-      const audio = new Audio(module.default)
-      audio.volume = 0.7
-      audioCache.set(eventType, audio)
-      return audio
-    } catch {
-      continue
+  if (team) {
+    filenameBases.push(`${team}-${eventType}`)
+    filenameBases.push(`${team === 'bulldogs' ? 'uga' : team}-${eventType}`)
+  }
+  
+  const genericBase = eventType === 'fieldGoal' ? 'field-goal' : 
+                      eventType === 'firstDown' ? 'first-down' :
+                      eventType === 'opponentThirdLong' ? 'opponent-third-long' :
+                      eventType
+  filenameBases.push(genericBase)
+  
+  for (const base of filenameBases) {
+    for (const ext of extensions) {
+      try {
+        const filename = base + ext
+        const module = await import(`@/assets/audio/${filename}`)
+        const audio = new Audio(module.default)
+        audio.volume = 0.7
+        audioCache.set(cacheKey, audio)
+        return audio
+      } catch {
+        continue
+      }
     }
   }
   
@@ -85,15 +107,15 @@ function playSynthesizedSound(eventType: EventType) {
   }
 }
 
-export async function playEventSound(eventType: EventType) {
-  const audioFile = await loadAudioFile(eventType)
+export async function playEventSound(eventType: EventType, team?: TeamType) {
+  const audioFile = await loadAudioFile(eventType, team)
   
   if (audioFile) {
     try {
       audioFile.currentTime = 0
       await audioFile.play()
     } catch (error) {
-      console.warn(`Failed to play audio file for ${eventType}, falling back to synthesized sound`, error)
+      console.warn(`Failed to play audio file for ${team || 'generic'} ${eventType}, falling back to synthesized sound`, error)
       playSynthesizedSound(eventType)
     }
   } else {
@@ -101,11 +123,18 @@ export async function playEventSound(eventType: EventType) {
   }
 }
 
-export function hasCustomAudio(eventType: EventType): boolean {
-  return audioCache.has(eventType)
+export function hasCustomAudio(eventType: EventType, team?: TeamType): boolean {
+  const cacheKey = getCacheKey(eventType, team)
+  return audioCache.has(cacheKey)
 }
 
 export async function preloadAudio() {
   const eventTypes: EventType[] = ['touchdown', 'fieldGoal', 'firstDown', 'safety', 'opponentThirdLong']
-  await Promise.all(eventTypes.map(type => loadAudioFile(type)))
+  const teams: (TeamType | undefined)[] = ['falcons', 'bulldogs', undefined]
+  
+  const loadPromises = eventTypes.flatMap(type =>
+    teams.map(team => loadAudioFile(type, team))
+  )
+  
+  await Promise.all(loadPromises)
 }
