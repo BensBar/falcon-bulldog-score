@@ -27,11 +27,11 @@ A real-time sports monitoring dashboard that tracks Atlanta Falcons and Georgia 
 - **Success criteria**: Settings persist across sessions; alerts only fire for enabled event types
 
 ### Audio Notifications
-- **Functionality**: Plays distinct synthesized tones for different scoring events
-- **Purpose**: Provides immediate feedback even when user isn't looking at screen
+- **Functionality**: Plays custom audio files or synthesized tones for different scoring events, with support for user-uploaded sound files
+- **Purpose**: Provides immediate feedback even when user isn't looking at screen; allows personalization with custom sounds
 - **Trigger**: Game event detected and alert type is enabled
-- **Progression**: Event detected → Check if alert enabled → Play corresponding audio → Show visual notification
-- **Success criteria**: Audio plays immediately; different events have distinguishable sounds; volume is reasonable
+- **Progression**: Event detected → Check if alert enabled → Load custom audio if available (fallback to synthesized) → Play corresponding audio → Show visual notification
+- **Success criteria**: Audio plays immediately; different events have distinguishable sounds; custom files override synthesized; volume is reasonable; files up to 500KB supported
 
 ### Game Status Display
 - **Functionality**: Shows current score, quarter, time, down/distance, and recent plays
@@ -46,6 +46,13 @@ A real-time sports monitoring dashboard that tracks Atlanta Falcons and Georgia 
 - **Trigger**: Automatic detection of scheduled/active games for both teams
 - **Progression**: App loads → Query both teams → Display active games → Monitor all simultaneously
 - **Success criteria**: Both games display when concurrent; correct team logos and colors
+
+### Audio Testing & Management
+- **Functionality**: Dedicated panel to test all alert sounds and view audio file status (custom vs synthesized)
+- **Purpose**: Allows users to preview sounds before games start and verify custom audio files loaded correctly
+- **Trigger**: Always available in sidebar; updated when custom files added
+- **Progression**: User uploads audio → Refresh app → Test panel shows "Custom" badge → Click test button → Sound plays
+- **Success criteria**: Each event has test button; shows audio source (custom/synthesized); plays sound on click; clear instructions for adding files
 
 ## Edge Case Handling
 - **No Active Games**: Display next scheduled game time and countdown; show "Waiting for game day" state
@@ -88,25 +95,30 @@ Subtle but energetic animations that celebrate scoring moments without distracti
 
 ## Component Selection
 - **Components**: 
-  - Card for game containers with subtle borders
+  - Card for game containers and settings panels with subtle borders
   - Switch for alert toggles in settings
-  - Badge for game status (LIVE, FINAL, Scheduled)
+  - Badge for game status (LIVE, FINAL, Scheduled) and audio type indicators
+  - Button for audio test triggers
   - Separator for visual division between games
   - ScrollArea for play-by-play history
   - Collapsible for settings panel
   - Toast (sonner) for transient alert notifications
 - **Customizations**: 
   - Custom score display component with large tabular numbers
-  - Custom audio synthesizer for event sounds
+  - Custom audio player with file loading and synthesizer fallback
   - Custom team logo/color system
   - Animated alert banner component
+  - Audio test panel with status indicators
 - **States**: 
   - Switches: Green when enabled, gray when disabled
   - Cards: Elevated shadow for active games, flat for inactive
-  - Badges: Color-coded (red for LIVE, green for scheduled, gray for final)
+  - Badges: Color-coded (red for LIVE, green for scheduled, gray for final; accent for custom audio, secondary for synthesized)
+  - Buttons: Hover state with color shift, active press state
   - Connection indicator: Pulsing when polling, solid when connected, red when error
 - **Icon Selection**: 
   - Bell (notifications on/off)
+  - SpeakerHigh (audio test panel)
+  - PlayCircle (test sound buttons)
   - Play/Pause (monitoring status)
   - Football from Phosphor Icons
   - Check/X for enabled/disabled states

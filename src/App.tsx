@@ -1,6 +1,7 @@
 import { useKV } from '@github/spark/hooks'
 import { GameCard } from '@/components/GameCard'
 import { SettingsPanel } from '@/components/SettingsPanel'
+import { AudioTestPanel } from '@/components/AudioTestPanel'
 import { ConnectionStatus } from '@/components/ConnectionStatus'
 import { useGameMonitor, type AlertSettings } from '@/hooks/useGameMonitor'
 import { Toaster } from '@/components/ui/sonner'
@@ -64,11 +65,12 @@ function App() {
             )}
           </div>
 
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-6">
             <SettingsPanel 
               settings={alertSettings || DEFAULT_SETTINGS} 
               onSettingsChange={handleSettingsChange}
             />
+            <AudioTestPanel />
           </div>
         </div>
 
