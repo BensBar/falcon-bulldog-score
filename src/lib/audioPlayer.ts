@@ -11,7 +11,7 @@ const audioModules = import.meta.glob('@/assets/audio/*.{mp3,wav,ogg,m4a}', { ea
 const availableAudioFiles = new Map<string, string>()
 for (const [path, url] of Object.entries(audioModules)) {
   // Extract filename from path (e.g., "/src/assets/audio/falcons-touchdown.mp3" -> "falcons-touchdown.mp3")
-  const filename = path.split('/').pop()
+  const filename = path.split('/').pop() ?? ''
   if (filename && url) {
     availableAudioFiles.set(filename, url)
   }
