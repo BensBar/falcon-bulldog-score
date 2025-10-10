@@ -37,11 +37,11 @@ A real-time sports score monitoring application for tracking Falcons and Bulldog
 ### Project Structure
 
 - `src/` - Application source code
+  - `assets/` - Static assets (audio files, images)
   - `components/` - React components
   - `hooks/` - Custom React hooks
   - `lib/` - Utility functions and API clients
   - `styles/` - CSS and theme files
-- `public/` - Static assets
 - `.github/workflows/` - CI/CD workflows
 
 ## Deployment
