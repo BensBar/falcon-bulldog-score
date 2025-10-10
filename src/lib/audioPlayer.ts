@@ -5,14 +5,14 @@ const audioContext = typeof window !== 'undefined' ? new AudioContext() : null
 const audioCache = new Map<string, HTMLAudioElement>()
 
 // Use Vite's glob import to load all audio files at build time
-const audioModules = import.meta.glob('@/assets/audio/*.{mp3,wav,ogg,m4a}', { eager: true, import: 'default' })
+const audioModules = import.meta.glob('@/assets/audio/*.{mp3,wav,ogg,m4a}', { eager: true, import: 'default' }) as Record<string, string>
 
 // Create a map of available audio files
 const availableAudioFiles = new Map<string, string>()
 for (const [path, url] of Object.entries(audioModules)) {
   // Extract filename from path (e.g., "/src/assets/audio/falcons-touchdown.mp3" -> "falcons-touchdown.mp3")
-  const filename = path.split('/').pop() || ''
-  if (url && typeof url === 'string') {
+  const filename = path.split('/').pop()
+  if (filename && url) {
     availableAudioFiles.set(filename, url)
   }
 }
