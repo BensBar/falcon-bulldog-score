@@ -135,6 +135,8 @@ export async function playEventSound(eventType: EventType, team?: TeamType) {
   }
 }
 
+const AUDIO_CONTEXT_RESUME_DELAY_MS = 100
+
 export function stopAllAudio() {
   if (currentlyPlaying) {
     currentlyPlaying.pause()
@@ -142,10 +144,13 @@ export function stopAllAudio() {
     currentlyPlaying = null
   }
   
-  // Stop any ongoing synthesized sounds by creating a new AudioContext
+  // Stop any ongoing synthesized sounds by temporarily suspending the AudioContext
   if (audioContext) {
-    audioContext.suspend()
-    setTimeout(() => audioContext?.resume(), 100)
+    audioContext.suspend().then(() => {
+      setTimeout(() => audioContext?.resume(), AUDIO_CONTEXT_RESUME_DELAY_MS)
+    }).catch(err => {
+      console.warn('Failed to suspend audio context:', err)
+    })
   }
 }
 
