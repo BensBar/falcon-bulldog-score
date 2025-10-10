@@ -3,12 +3,18 @@ export type TeamType = 'falcons' | 'bulldogs'
 
 const audioContext = typeof window !== 'undefined' ? new AudioContext() : null
 const audioCache = new Map<string, HTMLAudioElement>()
-const audioFileMap: Record<EventType, string[]> = {
-  touchdown: ['touchdown.mp3', 'touchdown.wav', 'touchdown.ogg', 'touchdown.m4a'],
-  fieldGoal: ['field-goal.mp3', 'field-goal.wav', 'field-goal.ogg', 'field-goal.m4a'],
-  firstDown: ['first-down.mp3', 'first-down.wav', 'first-down.ogg', 'first-down.m4a'],
-  safety: ['safety.mp3', 'safety.wav', 'safety.ogg', 'safety.m4a'],
-  opponentThirdLong: ['opponent-third-long.mp3', 'opponent-third-long.wav', 'opponent-third-long.ogg', 'opponent-third-long.m4a']
+
+// Use Vite's glob import to load all audio files at build time
+const audioModules = import.meta.glob('@/assets/audio/*.{mp3,wav,ogg,m4a}', { eager: true, import: 'default' })
+
+// Create a map of available audio files
+const availableAudioFiles = new Map<string, string>()
+for (const [path, url] of Object.entries(audioModules)) {
+  // Extract filename from path (e.g., "/src/assets/audio/falcons-touchdown.mp3" -> "falcons-touchdown.mp3")
+  const filename = path.split('/').pop() || ''
+  if (url && typeof url === 'string') {
+    availableAudioFiles.set(filename, url)
+  }
 }
 
 function getCacheKey(eventType: EventType, team?: TeamType): string {
@@ -38,15 +44,19 @@ async function loadAudioFile(eventType: EventType, team?: TeamType): Promise<HTM
   
   for (const base of filenameBases) {
     for (const ext of extensions) {
-      try {
-        const filename = base + ext
-        const module = await import(`@/assets/audio/${filename}`)
-        const audio = new Audio(module.default)
-        audio.volume = 0.7
-        audioCache.set(cacheKey, audio)
-        return audio
-      } catch {
-        continue
+      const filename = base + ext
+      const audioUrl = availableAudioFiles.get(filename)
+      
+      if (audioUrl) {
+        try {
+          const audio = new Audio(audioUrl)
+          audio.volume = 0.7
+          audioCache.set(cacheKey, audio)
+          return audio
+        } catch (error) {
+          console.warn(`Failed to load audio file ${filename}:`, error)
+          continue
+        }
       }
     }
   }
