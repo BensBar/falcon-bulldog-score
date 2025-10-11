@@ -3,6 +3,7 @@ export type TeamType = 'falcons' | 'bulldogs'
 
 const audioContext = typeof window !== 'undefined' ? new AudioContext() : null
 const audioCache = new Map<string, HTMLAudioElement>()
+let currentlyPlaying: HTMLAudioElement | null = null
 
 // Use Vite's glob import to load all audio files at build time
 const audioModules = import.meta.glob('@/assets/audio/*.{mp3,wav,ogg,m4a}', { eager: true, import: 'default' }) as Record<string, string>
@@ -123,6 +124,7 @@ export async function playEventSound(eventType: EventType, team?: TeamType) {
   if (audioFile) {
     try {
       audioFile.currentTime = 0
+      currentlyPlaying = audioFile
       await audioFile.play()
     } catch (error) {
       console.warn(`Failed to play audio file for ${team || 'generic'} ${eventType}, falling back to synthesized sound`, error)
@@ -130,6 +132,25 @@ export async function playEventSound(eventType: EventType, team?: TeamType) {
     }
   } else {
     playSynthesizedSound(eventType)
+  }
+}
+
+const AUDIO_CONTEXT_RESUME_DELAY_MS = 100
+
+export function stopAllAudio() {
+  if (currentlyPlaying) {
+    currentlyPlaying.pause()
+    currentlyPlaying.currentTime = 0
+    currentlyPlaying = null
+  }
+  
+  // Stop any ongoing synthesized sounds by temporarily suspending the AudioContext
+  if (audioContext) {
+    audioContext.suspend().then(() => {
+      setTimeout(() => audioContext?.resume(), AUDIO_CONTEXT_RESUME_DELAY_MS)
+    }).catch(err => {
+      console.warn('Failed to suspend audio context:', err)
+    })
   }
 }
 
