@@ -17,7 +17,7 @@ const DEFAULT_SETTINGS: AlertSettings = {
 
 function App() {
   const [alertSettings, setAlertSettings] = useKV<AlertSettings>('alert-settings', DEFAULT_SETTINGS)
-  const { games, isConnected, lastUpdate } = useGameMonitor(alertSettings || DEFAULT_SETTINGS)
+  const { games, isConnected, lastUpdate, metrics } = useGameMonitor(alertSettings || DEFAULT_SETTINGS)
 
   const handleSettingsChange = (newSettings: AlertSettings) => {
     setAlertSettings(newSettings)
@@ -41,7 +41,7 @@ function App() {
                 </p>
               </div>
             </div>
-            <ConnectionStatus isConnected={isConnected} lastUpdate={lastUpdate} />
+            <ConnectionStatus isConnected={isConnected} lastUpdate={lastUpdate} metrics={metrics} />
           </div>
         </header>
 
