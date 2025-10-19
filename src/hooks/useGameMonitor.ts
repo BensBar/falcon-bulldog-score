@@ -23,6 +23,10 @@ export function useGameMonitor(alertSettings: AlertSettings) {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const previousGames = useRef<Map<string, GameData>>(new Map())
   const processedPlays = useRef<Set<string>>(new Set())
+  const retryCount = useRef<number>(0)
+  const maxRetries = 3
+  const baseInterval = 5000 // 5 seconds for live games
+  const nonLiveInterval = 15000 // 15 seconds for non-live games
 
   const detectEvents = (current: GameData, previous: GameData | undefined): GameEvent[] => {
     if (!previous) return []
@@ -110,7 +114,7 @@ export function useGameMonitor(alertSettings: AlertSettings) {
     })
   }
 
-  const pollGames = async () => {
+  const pollGames = async (isRetry = false) => {
     try {
       const currentGames = await fetchAllGames()
       
@@ -124,19 +128,60 @@ export function useGameMonitor(alertSettings: AlertSettings) {
       setGames(currentGames)
       setIsConnected(true)
       setLastUpdate(new Date())
+      retryCount.current = 0 // Reset retry count on success
+      
+      console.log(`[${new Date().toISOString()}] Score update successful - Games:`, currentGames.length)
     } catch (error) {
-      console.error('Polling error:', error)
+      console.error(`[${new Date().toISOString()}] Polling error (attempt ${retryCount.current + 1}/${maxRetries}):`, error)
       setIsConnected(false)
+      
+      // Retry with exponential backoff
+      if (retryCount.current < maxRetries && !isRetry) {
+        retryCount.current++
+        const backoffDelay = Math.min(1000 * Math.pow(2, retryCount.current), 10000)
+        console.log(`[${new Date().toISOString()}] Retrying in ${backoffDelay}ms...`)
+        setTimeout(() => pollGames(true), backoffDelay)
+      }
     }
   }
 
   useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null
+    
+    // Initial poll
     pollGames()
     
-    const interval = setInterval(pollGames, 15000)
+    // Determine if any game is live
+    const hasLiveGame = () => games.some(game => game.status === 'in')
     
-    return () => clearInterval(interval)
-  }, [alertSettings])
+    // Set up polling interval based on game status
+    const setupInterval = () => {
+      if (intervalId) clearInterval(intervalId)
+      const interval = hasLiveGame() ? baseInterval : nonLiveInterval
+      console.log(`[${new Date().toISOString()}] Setting polling interval to ${interval}ms (${hasLiveGame() ? 'LIVE' : 'NON-LIVE'})`)
+      intervalId = setInterval(pollGames, interval)
+    }
+    
+    setupInterval()
+    
+    // Handle page visibility changes to prevent throttling
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        console.log(`[${new Date().toISOString()}] Tab hidden - polling continues in background`)
+      } else {
+        console.log(`[${new Date().toISOString()}] Tab visible - polling immediately`)
+        pollGames() // Poll immediately when tab becomes visible
+        setupInterval() // Reset interval
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [alertSettings, games])
 
   return { games, isConnected, lastUpdate }
 }
