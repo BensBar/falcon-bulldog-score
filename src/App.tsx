@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { GameCard } from '@/components/GameCard'
 import { SettingsPanel } from '@/components/SettingsPanel'
@@ -5,7 +6,9 @@ import { AudioTestPanel } from '@/components/AudioTestPanel'
 import { ConnectionStatus } from '@/components/ConnectionStatus'
 import { useGameMonitor, type AlertSettings } from '@/hooks/useGameMonitor'
 import { Toaster } from '@/components/ui/sonner'
+import { toast } from 'sonner'
 import { Football } from '@phosphor-icons/react'
+import { ensureAudioContextReady, isAudioContextSuspended } from '@/lib/audioPlayer'
 
 const DEFAULT_SETTINGS: AlertSettings = {
   touchdown: true,
@@ -22,6 +25,42 @@ function App() {
   const handleSettingsChange = (newSettings: AlertSettings) => {
     setAlertSettings(newSettings)
   }
+
+  // Add global click handler to unlock audio on first user interaction
+  useEffect(() => {
+    let audioUnlocked = false
+
+    const handleFirstInteraction = async () => {
+      if (audioUnlocked) return
+      
+      if (isAudioContextSuspended()) {
+        const success = await ensureAudioContextReady()
+        if (success) {
+          audioUnlocked = true
+          toast.success('🔊 Audio enabled! Game sounds will now play.', {
+            duration: 3000
+          })
+          console.log('Audio unlocked on user interaction')
+          
+          // Remove listeners after successful unlock
+          document.removeEventListener('click', handleFirstInteraction)
+          document.removeEventListener('touchstart', handleFirstInteraction)
+          document.removeEventListener('keydown', handleFirstInteraction)
+        }
+      }
+    }
+
+    // Listen for various user interactions
+    document.addEventListener('click', handleFirstInteraction)
+    document.addEventListener('touchstart', handleFirstInteraction)
+    document.addEventListener('keydown', handleFirstInteraction)
+
+    return () => {
+      document.removeEventListener('click', handleFirstInteraction)
+      document.removeEventListener('touchstart', handleFirstInteraction)
+      document.removeEventListener('keydown', handleFirstInteraction)
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-background text-foreground">

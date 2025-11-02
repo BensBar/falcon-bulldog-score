@@ -147,7 +147,12 @@ export function useGameMonitor(alertSettings: AlertSettings) {
           description: event.description,
           team: event.team 
         })
-        playEventSound(event.type, event.team)
+        playEventSound(event.type, event.team).catch(error => {
+          logger.error('Failed to play event sound', error as Error, {
+            eventType: event.type,
+            team: event.team
+          })
+        })
         toast(event.description, {
           duration: 3000,
           className: event.type === 'touchdown' || event.type === 'safety' ? 

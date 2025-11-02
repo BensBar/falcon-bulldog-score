@@ -4,6 +4,7 @@ export type TeamType = 'falcons' | 'bulldogs'
 const audioContext = typeof window !== 'undefined' ? new AudioContext() : null
 const audioCache = new Map<string, HTMLAudioElement>()
 let currentlyPlaying: HTMLAudioElement | null = null
+let audioContextReady = false
 
 // Use Vite's glob import to load all audio files at build time
 const audioModules = import.meta.glob('@/assets/audio/*.{mp3,wav,ogg,m4a}', { eager: true, import: 'default' }) as Record<string, string>
@@ -88,6 +89,39 @@ function playChord(frequencies: number[], duration: number) {
   frequencies.forEach(freq => playTone(freq, duration))
 }
 
+// Function to ensure AudioContext is ready for playback
+export async function ensureAudioContextReady(): Promise<boolean> {
+  if (!audioContext) {
+    console.warn('AudioContext not available')
+    return false
+  }
+  
+  if (audioContext.state === 'suspended') {
+    try {
+      await audioContext.resume()
+      audioContextReady = true
+      console.log('AudioContext resumed successfully')
+      return true
+    } catch (error) {
+      console.error('Failed to resume AudioContext:', error)
+      return false
+    }
+  }
+  
+  audioContextReady = audioContext.state === 'running'
+  return audioContextReady
+}
+
+// Function to check if AudioContext is currently suspended
+export function isAudioContextSuspended(): boolean {
+  return audioContext ? audioContext.state === 'suspended' : false
+}
+
+// Function to get the current AudioContext state
+export function getAudioContextState(): string {
+  return audioContext ? audioContext.state : 'unavailable'
+}
+
 function playSynthesizedSound(eventType: EventType) {
   if (!audioContext) return
 
@@ -119,6 +153,13 @@ function playSynthesizedSound(eventType: EventType) {
 }
 
 export async function playEventSound(eventType: EventType, team?: TeamType) {
+  // Ensure AudioContext is ready first
+  const contextReady = await ensureAudioContextReady()
+  
+  if (!contextReady) {
+    console.warn('AudioContext not ready, attempting to play anyway')
+  }
+  
   const audioFile = await loadAudioFile(eventType, team)
   
   if (audioFile) {
@@ -126,11 +167,13 @@ export async function playEventSound(eventType: EventType, team?: TeamType) {
       audioFile.currentTime = 0
       currentlyPlaying = audioFile
       await audioFile.play()
+      console.log(`Successfully played audio for ${team || 'generic'} ${eventType}`)
     } catch (error) {
       console.warn(`Failed to play audio file for ${team || 'generic'} ${eventType}, falling back to synthesized sound`, error)
       playSynthesizedSound(eventType)
     }
   } else {
+    console.log(`No audio file found for ${team || 'generic'} ${eventType}, using synthesized sound`)
     playSynthesizedSound(eventType)
   }
 }

@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { SpeakerHigh, PlayCircle, StopCircle } from '@phosphor-icons/react'
-import { playEventSound, stopAllAudio, hasCustomAudio, preloadAudio, type EventType, type TeamType } from '@/lib/audioPlayer'
+import { SpeakerHigh, PlayCircle, StopCircle, LockKey } from '@phosphor-icons/react'
+import { playEventSound, stopAllAudio, hasCustomAudio, preloadAudio, ensureAudioContextReady, isAudioContextSuspended, getAudioContextState, type EventType, type TeamType } from '@/lib/audioPlayer'
+import { toast } from 'sonner'
 
 export function AudioTestPanel() {
   const [loading, setLoading] = useState(true)
   const [customAudioStatus, setCustomAudioStatus] = useState<Record<string, boolean>>({})
+  const [audioContextState, setAudioContextState] = useState<string>('unknown')
+  const [audioSuspended, setAudioSuspended] = useState<boolean>(false)
 
   const eventInfo: Record<EventType, { label: string; description: string }> = {
     touchdown: { label: 'Touchdown', description: '6 points scored' },
@@ -42,11 +45,38 @@ export function AudioTestPanel() {
       setLoading(false)
     }
     
+    const updateAudioState = () => {
+      setAudioContextState(getAudioContextState())
+      setAudioSuspended(isAudioContextSuspended())
+    }
+    
     checkAudioFiles()
+    updateAudioState()
+    
+    // Check audio context state periodically
+    const interval = setInterval(updateAudioState, 1000)
+    
+    return () => clearInterval(interval)
   }, [])
 
   const handleTestSound = async (eventType: EventType, team: TeamType) => {
-    await playEventSound(eventType, team)
+    try {
+      await playEventSound(eventType, team)
+    } catch (error) {
+      console.error('Failed to play test sound:', error)
+      toast.error('Failed to play audio. Try clicking "Unlock Audio" first.')
+    }
+  }
+
+  const handleUnlockAudio = async () => {
+    const success = await ensureAudioContextReady()
+    if (success) {
+      toast.success('Audio unlocked! Sounds will now play.')
+      setAudioContextState(getAudioContextState())
+      setAudioSuspended(isAudioContextSuspended())
+    } else {
+      toast.error('Failed to unlock audio. Please try again.')
+    }
   }
 
   const getAudioStatus = (eventType: EventType, team: TeamType): 'custom' | 'generic' | 'synthesized' => {
@@ -72,6 +102,40 @@ export function AudioTestPanel() {
           <StopCircle size={16} weight="fill" />
           Stop
         </Button>
+      </div>
+      
+      {/* Audio Context Status */}
+      <div className="mb-4 p-3 rounded-lg border border-border bg-card/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Audio Status:</span>
+            <Badge 
+              variant={audioContextState === 'running' ? 'default' : 'secondary'}
+              className={audioContextState === 'running' ? 'bg-green-600 text-white' : ''}
+            >
+              {audioContextState === 'running' ? '✓ Ready' : 
+               audioContextState === 'suspended' ? '⏸ Suspended' : 
+               audioContextState === 'unavailable' ? '✗ Unavailable' : 
+               audioContextState}
+            </Badge>
+          </div>
+          {audioSuspended && (
+            <Button
+              size="sm"
+              variant="default"
+              onClick={handleUnlockAudio}
+              className="h-8 gap-2"
+            >
+              <LockKey size={16} weight="fill" />
+              Unlock Audio
+            </Button>
+          )}
+        </div>
+        {audioSuspended && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Click "Unlock Audio" or any test button to enable sounds
+          </p>
+        )}
       </div>
       
       <p className="text-sm text-muted-foreground mb-6">
