@@ -53,8 +53,9 @@ export function AudioTestPanel() {
     checkAudioFiles()
     updateAudioState()
     
-    // Check audio context state periodically
-    const interval = setInterval(updateAudioState, 1000)
+    // Check audio context state less frequently (every 3 seconds)
+    // This is a fallback since AudioContext doesn't reliably fire statechange events in all browsers
+    const interval = setInterval(updateAudioState, 3000)
     
     return () => clearInterval(interval)
   }, [])

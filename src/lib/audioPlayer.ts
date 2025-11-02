@@ -4,7 +4,6 @@ export type TeamType = 'falcons' | 'bulldogs'
 const audioContext = typeof window !== 'undefined' ? new AudioContext() : null
 const audioCache = new Map<string, HTMLAudioElement>()
 let currentlyPlaying: HTMLAudioElement | null = null
-let audioContextReady = false
 
 // Use Vite's glob import to load all audio files at build time
 const audioModules = import.meta.glob('@/assets/audio/*.{mp3,wav,ogg,m4a}', { eager: true, import: 'default' }) as Record<string, string>
@@ -99,7 +98,6 @@ export async function ensureAudioContextReady(): Promise<boolean> {
   if (audioContext.state === 'suspended') {
     try {
       await audioContext.resume()
-      audioContextReady = true
       console.log('AudioContext resumed successfully')
       return true
     } catch (error) {
@@ -108,8 +106,7 @@ export async function ensureAudioContextReady(): Promise<boolean> {
     }
   }
   
-  audioContextReady = audioContext.state === 'running'
-  return audioContextReady
+  return audioContext.state === 'running'
 }
 
 // Function to check if AudioContext is currently suspended
@@ -122,8 +119,11 @@ export function getAudioContextState(): string {
   return audioContext ? audioContext.state : 'unavailable'
 }
 
-function playSynthesizedSound(eventType: EventType) {
+async function playSynthesizedSound(eventType: EventType) {
   if (!audioContext) return
+
+  // Ensure AudioContext is ready for synthesized sounds too
+  await ensureAudioContextReady()
 
   switch (eventType) {
     case 'touchdown':
