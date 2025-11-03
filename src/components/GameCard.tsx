@@ -23,12 +23,14 @@ export function GameCard({ game, triggerPulse = false }: GameCardProps) {
   // Trigger pulse animation when triggerPulse becomes true
   useEffect(() => {
     if (triggerPulse && isLive) {
+      // Use blue-500 (rgb(59, 130, 246)) for pulse effect
+      const PRIMARY_COLOR_RGB = '59, 130, 246'
       controls.start({
         scale: [1, 1.02, 1],
         boxShadow: [
-          '0 0 0 0 rgba(var(--color-primary-rgb, 59, 130, 246), 0.7)',
-          '0 0 0 8px rgba(var(--color-primary-rgb, 59, 130, 246), 0)',
-          '0 0 0 0 rgba(var(--color-primary-rgb, 59, 130, 246), 0)'
+          `0 0 0 0 rgba(${PRIMARY_COLOR_RGB}, 0.7)`,
+          `0 0 0 8px rgba(${PRIMARY_COLOR_RGB}, 0)`,
+          `0 0 0 0 rgba(${PRIMARY_COLOR_RGB}, 0)`
         ],
         transition: { duration: 0.6, ease: 'easeOut' }
       })

@@ -23,7 +23,8 @@ export function AudioUnlockBanner({ onDismiss, show = true }: AudioUnlockBannerP
     }
 
     checkAudioStatus()
-    const interval = setInterval(checkAudioStatus, 1000)
+    // Check every 3 seconds - audio context changes are typically user-initiated
+    const interval = setInterval(checkAudioStatus, 3000)
 
     return () => clearInterval(interval)
   }, [show])

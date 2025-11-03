@@ -9,6 +9,7 @@ interface ScreenFlashAlertProps {
 }
 
 // Color configurations for different event types and teams
+// Using specific hex values as per requirements for consistent visual identity
 const getFlashColor = (eventType: EventType, team: TeamType): string => {
   switch (eventType) {
     case 'touchdown':
