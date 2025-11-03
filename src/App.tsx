@@ -24,11 +24,17 @@ function App() {
   const [alertSettings, setAlertSettings] = useKV<AlertSettings>('alert-settings', DEFAULT_SETTINGS)
   const [flashAlert, setFlashAlert] = useState<{ type: EventType; team: TeamType } | null>(null)
   const [showAudioBanner, setShowAudioBanner] = useState(true)
+  const [pulseTeam, setPulseTeam] = useState<TeamType | null>(null)
   
   const { games, isConnected, lastUpdate, metrics } = useGameMonitor(
     alertSettings || DEFAULT_SETTINGS,
     {
-      onVisualAlert: (type, team) => setFlashAlert({ type, team })
+      onVisualAlert: (type, team) => {
+        setFlashAlert({ type, team })
+        setPulseTeam(team)
+        // Clear pulse after animation completes
+        setTimeout(() => setPulseTeam(null), 600)
+      }
     }
   )
 
@@ -119,7 +125,11 @@ function App() {
               </div>
             ) : (
               games.map(game => (
-                <GameCard key={game.id} game={game} />
+                <GameCard 
+                  key={game.id} 
+                  game={game}
+                  triggerPulse={pulseTeam === game.team}
+                />
               ))
             )}
           </div>
