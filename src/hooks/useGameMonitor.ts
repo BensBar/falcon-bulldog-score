@@ -12,6 +12,10 @@ export interface AlertSettings {
   opponentThirdLong: boolean
 }
 
+export interface GameMonitorCallbacks {
+  onVisualAlert?: (eventType: EventType, team: TeamType) => void
+}
+
 interface GameEvent {
   type: EventType
   description: string
@@ -27,7 +31,7 @@ export interface MonitorMetrics {
   consecutiveFailures: number
 }
 
-export function useGameMonitor(alertSettings: AlertSettings) {
+export function useGameMonitor(alertSettings: AlertSettings, callbacks?: GameMonitorCallbacks) {
   const [games, setGames] = useState<GameData[]>([])
   const [isConnected, setIsConnected] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
@@ -147,6 +151,10 @@ export function useGameMonitor(alertSettings: AlertSettings) {
           description: event.description,
           team: event.team 
         })
+        
+        // Trigger visual alert callback (always, as fallback/supplement to audio)
+        callbacks?.onVisualAlert?.(event.type, event.team)
+        
         playEventSound(event.type, event.team).catch(error => {
           logger.error('Failed to play event sound', error as Error, {
             eventType: event.type,

@@ -1,26 +1,47 @@
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { type GameData } from '@/lib/espnApi'
-import { motion } from 'framer-motion'
+import { motion, useAnimation } from 'framer-motion'
 import { Football } from '@phosphor-icons/react'
+import { useEffect } from 'react'
 
 interface GameCardProps {
   game: GameData
+  triggerPulse?: boolean
 }
 
-export function GameCard({ game }: GameCardProps) {
+export function GameCard({ game, triggerPulse = false }: GameCardProps) {
   const myTeam = game.isHome ? game.homeTeam : game.awayTeam
   const oppTeam = game.isHome ? game.awayTeam : game.homeTeam
   const myScore = game.isHome ? game.homeScore : game.awayScore
   const oppScore = game.isHome ? game.awayScore : game.homeScore
   const myPossession = game.possession === myTeam
+  const controls = useAnimation()
   
   const isLive = game.status === 'in'
+  
+  // Trigger pulse animation when triggerPulse becomes true
+  useEffect(() => {
+    if (triggerPulse && isLive) {
+      // Use blue-500 (rgb(59, 130, 246)) for pulse effect
+      const PRIMARY_COLOR_RGB = '59, 130, 246'
+      controls.start({
+        scale: [1, 1.02, 1],
+        boxShadow: [
+          `0 0 0 0 rgba(${PRIMARY_COLOR_RGB}, 0.7)`,
+          `0 0 0 8px rgba(${PRIMARY_COLOR_RGB}, 0)`,
+          `0 0 0 0 rgba(${PRIMARY_COLOR_RGB}, 0)`
+        ],
+        transition: { duration: 0.6, ease: 'easeOut' }
+      })
+    }
+  }, [triggerPulse, isLive, controls])
   
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      animate={controls}
+      style={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
       <Card className={`p-6 ${isLive ? 'ring-2 ring-primary shadow-lg' : ''}`}>
