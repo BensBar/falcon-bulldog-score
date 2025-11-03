@@ -1,14 +1,16 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { GameCard } from '@/components/GameCard'
 import { SettingsPanel } from '@/components/SettingsPanel'
 import { AudioTestPanel } from '@/components/AudioTestPanel'
 import { ConnectionStatus } from '@/components/ConnectionStatus'
+import { ScreenFlashAlert } from '@/components/ScreenFlashAlert'
+import { AudioUnlockBanner } from '@/components/AudioUnlockBanner'
 import { useGameMonitor, type AlertSettings } from '@/hooks/useGameMonitor'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
 import { Football } from '@phosphor-icons/react'
-import { ensureAudioContextReady, isAudioContextSuspended } from '@/lib/audioPlayer'
+import { ensureAudioContextReady, isAudioContextSuspended, type EventType, type TeamType } from '@/lib/audioPlayer'
 
 const DEFAULT_SETTINGS: AlertSettings = {
   touchdown: true,
@@ -20,7 +22,15 @@ const DEFAULT_SETTINGS: AlertSettings = {
 
 function App() {
   const [alertSettings, setAlertSettings] = useKV<AlertSettings>('alert-settings', DEFAULT_SETTINGS)
-  const { games, isConnected, lastUpdate, metrics } = useGameMonitor(alertSettings || DEFAULT_SETTINGS)
+  const [flashAlert, setFlashAlert] = useState<{ type: EventType; team: TeamType } | null>(null)
+  const [showAudioBanner, setShowAudioBanner] = useState(true)
+  
+  const { games, isConnected, lastUpdate, metrics } = useGameMonitor(
+    alertSettings || DEFAULT_SETTINGS,
+    {
+      onVisualAlert: (type, team) => setFlashAlert({ type, team })
+    }
+  )
 
   const handleSettingsChange = (newSettings: AlertSettings) => {
     setAlertSettings(newSettings)
@@ -37,6 +47,7 @@ function App() {
         const success = await ensureAudioContextReady()
         if (success) {
           audioUnlocked = true
+          setShowAudioBanner(false) // Hide banner when audio is enabled
           toast.success('🔊 Audio enabled! Game sounds will now play.', {
             duration: 3000
           })
@@ -65,6 +76,15 @@ function App() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Toaster />
+      <AudioUnlockBanner 
+        show={showAudioBanner} 
+        onDismiss={() => setShowAudioBanner(false)} 
+      />
+      <ScreenFlashAlert 
+        eventType={flashAlert?.type || null} 
+        team={flashAlert?.team || null}
+        onComplete={() => setFlashAlert(null)}
+      />
       
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <header className="mb-8">
